@@ -7,7 +7,7 @@ from collections import deque
 earth_radius = 60000
 moon_radius = 31200
 moon_distance = 384400
-orbital_period = 27.3 * 24 * 60 * 60
+orbital_period = 27.3 * 24 * 60 * 60  # seconds in one orbit
 
 fig, ax = plt.subplots()
 ax.set_aspect('equal', 'box')
@@ -46,7 +46,7 @@ orbit_x = moon_distance * np.cos(orbit_theta)
 orbit_y = moon_distance * np.sin(orbit_theta)
 moon_orbit, = ax.plot(orbit_x, orbit_y, color='darkgray', linestyle='--', label='Moon Orbit', zorder=0)
 
-# Moon glow layers - created once
+# Moon glow layers
 moon_glow_layers = []
 for i in range(1, 6):
     glow = plt.Circle(
@@ -59,15 +59,19 @@ for i in range(1, 6):
     moon_glow_layers.append(glow)
     ax.add_patch(glow)
 
-# Use deque for efficient trail management
+# Use deque for trail
 trail_length = 80
 trail_points_x = deque(maxlen=trail_length)
 trail_points_y = deque(maxlen=trail_length)
 
-speed_multiplier = 2000
-frames = range(0, 1888)
-interval = 5
+speed_multiplier = 2000  # slower for smoother movement
+interval = 10  # milliseconds between frames (increase smoothness)
 
+def frame_generator():
+    i = 0
+    while True:
+        yield i
+        i += 1
 
 def init():
     moon_trail.set_data([], [])
@@ -76,9 +80,8 @@ def init():
     moon_circle.set_center((moon_distance, 0))
     return [moon_circle, moon_trail, *moon_glow_layers]
 
-
 def update(frame):
-    angle = 2 * np.pi * (frame * speed_multiplier) / orbital_period
+    angle = 2 * np.pi * ((frame * speed_multiplier) % orbital_period) / orbital_period
     moon_x = moon_distance * np.cos(angle)
     moon_y = moon_distance * np.sin(angle)
 
@@ -91,10 +94,15 @@ def update(frame):
     for glow in moon_glow_layers:
         glow.set_center((moon_x, moon_y))
 
-    # Return all artists that have been updated
     return [moon_circle, moon_trail, *moon_glow_layers]
 
-
-ani = FuncAnimation(fig, update, frames=frames, init_func=init, interval=interval, blit=True)
+ani = FuncAnimation(
+    fig, update,
+    frames=frame_generator(),
+    init_func=init,
+    interval=interval,
+    blit=True,
+    cache_frame_data=False  # <-- This suppresses the warning for infinite frames
+)
 
 plt.show()
