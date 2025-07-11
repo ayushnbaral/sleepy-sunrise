@@ -32,7 +32,3 @@ Future development will include:
 ## 📌 Purpose
 
 Our goal is to document our progress and create accessible visual simulations that reflect both our learning and curiosity. This is an ongoing collaborative project meant to grow as we do.
-
-## Documentation
-
-![Orbital Modeling Animation](gif-main.mp4)
