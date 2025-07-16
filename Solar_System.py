@@ -3,8 +3,7 @@ from matplotlib.animation import FuncAnimation
 import numpy as np
 
 lim = 32 * 1.496e11
-zoom = True
-max_trail_length = 300
+zoom = False
 
 plt.rcParams['font.family'] = 'cambria'
 fig, ax = plt.subplots()
@@ -84,6 +83,11 @@ for name, (mass, pos, vel) in planet_data.items():
     planet.trail_x = []
     planet.trail_y = []
 
+    # Assign trail length per planet
+    if name in {"mercury", "venus", "earth", "mars"}:
+        planet.trail_length = 250
+    else:
+        planet.trail_length = 700
 
 def init():
     for p in planets:
@@ -127,17 +131,16 @@ def velocity_verlet_step(planets, dt):
 compute_acceleration(planets)
 
 def update(frame):
-    global days
     velocity_verlet_step(planets, dt)
 
     for p in planets:
         p.marker.set_data([p.pos[0]], [p.pos[1]])
         p.trail_x.append(p.pos[0])
         p.trail_y.append(p.pos[1])
+        if len(p.trail_x) > p.trail_length:
+            p.trail_x.pop(0)
+            p.trail_y.pop(0)
         p.trail.set_data(p.trail_x, p.trail_y)
-    if len(p.trail_x) > max_trail_length:
-        p.trail_x.pop(0)
-        p.trail_y.pop(0)
     return [p.marker for p in planets] + [p.trail for p in planets]
 
 
