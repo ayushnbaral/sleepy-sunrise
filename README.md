@@ -27,7 +27,7 @@ Our current modules focus on **gravitational modeling and orbital dynamics**, in
 
 ## ⚙️ Tools & Concepts
 
-- **Languages & Libraries:** Python, NumPy, Matplotlib (Tkinter for UI)  
+- **Languages & Libraries:** Python, NumPy, Matplotlib  
 - **Physics Topics:** Newtonian gravity, orbital mechanics, circular motion, numerical integration (Velocity Verlet)
 
 ---
