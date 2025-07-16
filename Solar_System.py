@@ -1,127 +1,146 @@
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import numpy as np
 
-# Constants
-AU = 1.496e11  # meters
-year = 365.25 * 24 * 3600  # seconds in a year
-G = 6.67430e-11
-M_sun = 1.989e30
+lim = 32 * 1.496e11
+zoom = True
+max_trail_length = 300
 
-# Orbital parameters: [semi-major axis (AU), eccentricity, period (years), color, size]
-planets = {
-    "Mercury": [0.39, 0.206, 0.24, 'gray', 3],
-    "Venus":   [0.72, 0.007, 0.62, 'orange', 5],
-    "Earth":   [1.00, 0.017, 1.00, 'blue', 6],
-    "Mars":    [1.52, 0.093, 1.88, 'red', 4],
-    "Jupiter": [5.20, 0.049, 11.86, 'gold', 7],
-    "Saturn":  [9.58, 0.056, 29.46, 'khaki', 6],
-    "Uranus":  [19.2, 0.046, 84.01, 'lightblue', 5],
-    "Neptune": [30.1, 0.010, 164.8, 'purple', 5]
-}
-
-# Precompute orbit paths (elliptical) for drawing
-theta = np.linspace(0, 2 * np.pi, 500)
-orbits = {}
-for name, (a, e, _, _, _) in planets.items():
-    r = a * (1 - e**2) / (1 + e * np.cos(theta))
-    x = r * np.cos(theta)
-    y = r * np.sin(theta)
-    orbits[name] = (x, y)
-
-# Initialize figure
-fig, ax = plt.subplots(figsize=(8, 8))
+plt.rcParams['font.family'] = 'cambria'
+fig, ax = plt.subplots()
 ax.set_aspect('equal')
-ax.set_facecolor('black')
-fig.set_facecolor('black')
-ax.set_xlim(-35, 35)
-ax.set_ylim(-35, 35)
-ax.set_title("Solar System Simulation (Elliptical Orbits)", color='white')
-ax.tick_params(colors='white')
+fig.set_facecolor('#010b19')
+ax.set_facecolor('#010b19')
 
-# Draw orbits
-for name, (x, y) in orbits.items():
-    ax.plot(x, y, color='white', linestyle='--', linewidth=0.5)
-
-# Plot Sun
-sun_dot, = ax.plot(0, 0, 'yo', markersize=10, label='Sun')
-
-# Initialize planet dots and trails
-planet_dots = {}
-planet_trails = {}
-trail_data = {}
-
-for name, (_, _, _, color, size) in planets.items():
-    dot, = ax.plot([], [], 'o', color=color, markersize=size, label=name)
-    trail, = ax.plot([], [], color=color, linewidth=1, alpha=0.5)
-    planet_dots[name] = dot
-    planet_trails[name] = trail
-    trail_data[name] = ([], [])
-
-# Time management
-t = 0
-dt = 20 * 24 * 3600  #  days per frame
-
-'''
-scale_factors = {
-    'Mercury': 4,
-    'Venus': 3,
-    'Earth': 2.5,
-    'Mars': 2,
-    'Jupiter': 1,
-    'Saturn': 1,
-    'Uranus': 1,
-    'Neptune': 1
+# -- Constants -- #
+dt = 86400
+planet_data = {
+    "sun":      [1.989e30,     [0.0, 0.0],           [0.0, 0.0]],
+    "mercury":  [3.301e23,     [5.79e10, 0.0],       [0.0, 47890.0]],
+    "venus":    [4.867e24,     [1.082e11, 0.0],      [0.0, 35020.0]],
+    "earth":    [5.972e24,     [1.496e11, 0.0],      [0.0, 29780.0]],
+    "mars":     [6.417e23,     [2.279e11, 0.0],      [0.0, 24130.0]],
+    "jupiter":  [1.899e27,     [7.785e11, 0.0],      [0.0, 13070.0]],
+    "saturn":   [5.685e26,     [1.433e12, 0.0],      [0.0, 9680.0]],
+    "uranus":   [8.682e25,     [2.877e12, 0.0],      [0.0, 6810.0]],
+    "neptune":  [1.024e26,     [4.503e12, 0.0],      [0.0, 5430.0]]
 }
-'''
+planet_colors = {
+    "sun": "yellow",
+    "mercury": "gray",
+    "venus": "orange",
+    "earth": "blue",
+    "mars": "red",
+    "jupiter": "brown",
+    "saturn": "gold",
+    "uranus": "cyan",
+    "neptune": "violet"
+}
 
-# Animation update
-def animate(frame):
-    global t
-    t += dt
+planet_sizes = {
+    "sun": 22,        # ~109x Earth's size → scaled down to stay visible
+    "mercury": 2,     # 0.38x Earth
+    "venus": 5,       # 0.95x Earth
+    "earth": 5,
+    "mars": 3,        # 0.53x Earth
+    "jupiter": 11,    # 11x Earth
+    "saturn": 10,     # 9x Earth
+    "uranus": 6,      # 4x Earth
+    "neptune": 6      # 3.9x Earth
+}
 
-    for name, (a, e, T, color, size) in planets.items():
-        # Mean motion
-        n = 2 * np.pi / (T * year)
+if not zoom:
+    ax.set_xlim(-lim, lim)
+    ax.set_ylim(-lim, lim)
+    ax.set_title("Solar System (time = 10 days)", color='white')
+    planet_sizes.update({"sun":1})
+    dt = 864000
+else:
+    ax.set_xlim(-lim / 10, lim / 10)
+    ax.set_ylim(-lim / 10, lim / 10)
+    del planet_data["jupiter"], planet_data["saturn"], planet_data["uranus"], planet_data["neptune"]
+    ax.set_title("Inner Planets (time = 1 day)", color='white')
 
-        # Mean anomaly
-        M = n * t
+class Planet:
+    def __init__(self, name, mass, pos, vel):
+        self.name = name
+        self.mass = mass
+        self.pos = np.array(pos, dtype=float)
+        self.velocity = np.array(vel, dtype=float)
+        self.acceleration = np.zeros(2)
 
-        # Solve Kepler's Equation: M = E - e*sin(E)
-        E = M
-        for _ in range(5):  # Newton-Raphson
-            E = E - (E - e * np.sin(E) - M) / (1 - e * np.cos(E))
+planets = []
 
-        # True anomaly
-        theta = 2 * np.arctan2(np.sqrt(1 + e) * np.sin(E / 2),
-                               np.sqrt(1 - e) * np.cos(E / 2))
 
-        # Distance from Sun
-        r = a * (1 - e * np.cos(E))
 
-        # Position in Cartesian coordinates
-        x = r * np.cos(theta)
-        y = r * np.sin(theta)
+for name, (mass, pos, vel) in planet_data.items():
+    planet = Planet(name, mass, pos, vel)
+    planets.append(planet)
+    color = planet_colors.get(name, "white")
+    size = planet_sizes.get(name, 4)
+    planet.color = color
+    planet.marker, = ax.plot([], [], 'o', color=color, markersize=size)
+    planet.trail, = ax.plot([], [], '-', lw=0.7, color=color, alpha=0.6)
+    planet.trail_x = []
+    planet.trail_y = []
 
-        # Update planet position
-        planet_dots[name].set_data([x],[y])
 
-        # Update trail
-        trail_x, trail_y = trail_data[name]
-        trail_x.append(x)
-        trail_y.append(y)
+def init():
+    for p in planets:
+        p.marker.set_data([p.pos[0]], [p.pos[1]])
+    return [p.marker for p in planets]
 
-        # Limit trail length
-        max_len = 100
-        if len(trail_x) > max_len:
-            trail_x.pop(0)
-            trail_y.pop(0)
 
-        planet_trails[name].set_data(trail_x, trail_y)
+def compute_acceleration(planets):
+    G = 6.67430e-11
 
-    return list(planet_dots.values()) + list(planet_trails.values()) + [sun_dot]
+    for p in planets:
+        total_acceleration = np.zeros(2)
 
-# Animate
-ani = FuncAnimation(fig, animate, frames=5000, interval=30, blit=True)
-plt.legend(loc='upper right', facecolor='black', labelcolor='white')
+        for other in planets:
+            if p is other:
+                continue
+
+            r = other.pos - p.pos
+            dist = np.linalg.norm(r)
+            if dist == 0:
+                continue
+
+            force_dir = r / dist
+            acc = G * other.mass / dist ** 2
+            total_acceleration += acc * force_dir
+        p.acceleration = total_acceleration
+
+
+# noinspection SpellCheckingInspection
+def velocity_verlet_step(planets, dt):
+
+    for p in planets:
+        p.pos += p.velocity * dt + 0.5 * p.acceleration * dt ** 2
+
+    old_accelerations = [p.acceleration.copy() for p in planets]
+    compute_acceleration(planets)
+
+    for p, a_old in zip(planets, old_accelerations):
+        p.velocity += 0.5 * (a_old + p.acceleration) * dt
+
+compute_acceleration(planets)
+
+def update(frame):
+    global days
+    velocity_verlet_step(planets, dt)
+
+    for p in planets:
+        p.marker.set_data([p.pos[0]], [p.pos[1]])
+        p.trail_x.append(p.pos[0])
+        p.trail_y.append(p.pos[1])
+        p.trail.set_data(p.trail_x, p.trail_y)
+    if len(p.trail_x) > max_trail_length:
+        p.trail_x.pop(0)
+        p.trail_y.pop(0)
+    return [p.marker for p in planets] + [p.trail for p in planets]
+
+
+
+ani = FuncAnimation(fig, update, init_func=init, frames=1000, interval=30, blit=True)
 plt.show()
