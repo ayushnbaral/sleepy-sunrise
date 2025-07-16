@@ -1,34 +1,50 @@
-# Sleepy Sunrise — A Physics Modeling Project
+# ☀️ Sleepy Sunrise — A Physics Modeling Project
 
 **Developed by Archith Sridhar and Ayush Baral**
 
 We are rising high school juniors with a strong interest in physics and applied mathematics.  
 This project is a collaborative effort to explore and visualize fundamental physical systems through computational modeling.
 
+---
+
 ## 🌐 Current Focus
 
-Our current module centers on simulating orbital mechanics—beginning with the Earth-Moon system.  
-Using Python, NumPy, and Matplotlib, we developed an animated simulation featuring:
+Our current modules focus on **gravitational modeling and orbital dynamics**, including:
 
-- Orbital motion with smooth animation
-- Motion trails and glow effects
-- Adjustable simulation parameters
+### 🔄 Solar System Simulation
+- Realistic orbital motion of the Sun and 8 planets  
+- Velocity Verlet integration for accurate trajectories  
+- Smooth animations with trails and color-coded planets  
+- Toggleable zoom and simulation speed  
+- Built-in support for UI-based interaction (Tkinter)
+
+### 🌙 Earth-Moon System
+- Two-body simulation of circular orbit  
+- Adjustable mass, velocity, and distance parameters  
+- Educational visualization of angular motion and gravitational pull
+
+---
 
 ## ⚙️ Tools & Concepts
 
-- **Languages & Libraries:** Python, NumPy, Matplotlib  
-- **Physics Topics:** Circular motion, angular velocity, gravitational modeling
+- **Languages & Libraries:** Python, NumPy, Matplotlib (Tkinter for UI)  
+- **Physics Topics:** Newtonian gravity, orbital mechanics, circular motion, numerical integration (Velocity Verlet)
+
+---
 
 ## 🚀 Project Goals
 
 This repository serves as a learning sandbox for deepening our understanding of classical mechanics and computational physics.
 
-Future development will include:
-
-- Two-body and three-body simulations  
+### Future Plans:
 - N-body gravitational systems  
-- Broader physics models (e.g. collisions, field visualizations)
+- Multi-moon or binary star simulations  
+- Electromagnetic field and collision visualizations  
+- Exportable animations and interactive sliders for user control
+
+---
 
 ## 📌 Purpose
 
-Our goal is to document our progress and create accessible visual simulations that reflect both our learning and curiosity. This is an ongoing collaborative project meant to grow as we do.
+Our goal is to document our progress and create accessible visual simulations that reflect both our learning and curiosity.  
+This is an ongoing collaborative project that we will continue to expand as our skills and interests grow.
