@@ -81,7 +81,7 @@ def verlet_integration(pos1, pos2, a1, a2, v1, v2):
 def peters_mathews(pos1, pos2, v1, v2): # Orbital Decay
     r_vec = pos2 - pos1
     r = np.linalg.norm(r_vec)
-    delta_r = -5e5 * (PM_CONST / (r ** 3) * dt) # Change the Constant for speed
+    delta_r = -5e3 * (PM_CONST / (r ** 3) * dt) # Change the Constant for speed
     r_new = r + delta_r
     r_hat = r_vec / r
     if r_new <= R_ns or r_new <= 0:
