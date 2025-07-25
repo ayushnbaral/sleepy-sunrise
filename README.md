@@ -22,7 +22,7 @@ pip install numpy matplotlib
 ```
 ---
 
-## 🌐 Current Focus
+## Completed Projects
 
 Our current modules focus on **gravitational modeling and orbital dynamics**, including:
 
