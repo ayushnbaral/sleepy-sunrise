@@ -55,6 +55,8 @@ fig.set_facecolor('#010b19')
 ax.set_facecolor('#010b19')
 ax.tick_params(axis='x', colors='#010b19')
 ax.tick_params(axis='y', colors='#010b19')
+plt.rcParams['font.family'] = 'Franklin Gothic Book'
+ax.set_title("Kilonova Simulation", color='white')
 ejecta_scatter = ax.scatter([], [], s=5, alpha=0.8, zorder=2)
 for spine in ax.spines.values():
     spine.set_color('white')
@@ -78,23 +80,37 @@ def verlet_integration(pos1, pos2, a1, a2, v1, v2):
     v2_new = v2 + 0.5 * (a2 + a2_new) * dt
     return pos1_new, pos2_new, v1_new, v2_new, a1_new, a2_new # Setting new positions
 
-def peters_mathews(pos1, pos2, v1, v2): # Orbital Decay
+
+def peters_mathews(pos1, pos2, v1, v2):
     r_vec = pos2 - pos1
     r = np.linalg.norm(r_vec)
-    delta_r = -2.5e4 * (PM_CONST / (r ** 3) * dt) # Change the Constant for speed
+    delta_r = -2.5e4 * (PM_CONST / (r ** 3) * dt)
     r_new = r + delta_r
     r_hat = r_vec / r
+
     if r_new <= R_ns or r_new <= 0:
         global merger_triggered
         merger_triggered = True
         return pos1, pos2, v1, v2
+
     pos1_new = pos1 - 0.5 * (r_new - r) * r_hat
     pos2_new = pos2 + 0.5 * (r_new - r) * r_hat
+
+    # Moderate spin-up with cap
     v_mag = np.sqrt(G * (m1 + m2) / r_new) / 2
     tangential_dir = np.array([-r_hat[1], r_hat[0]])
-    v1_new = v_mag * tangential_dir
+    closeness = 1 - r_new / init_dist
+
+    boost_factor = 3.0
+    spin_multiplier = 1 + boost_factor * closeness**2
+    spin_multiplier = min(spin_multiplier, 2.3775)  # Cap the multiplier (tune this!)
+
+    v1_new = v_mag * tangential_dir * spin_multiplier
     v2_new = -v1_new
+
     return pos1_new, pos2_new, v1_new, v2_new
+
+
 
 def init():
     pos1_dot.set_data([], [])
