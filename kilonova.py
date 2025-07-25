@@ -27,10 +27,17 @@ v2 = np.array([0, -v], dtype=float)
 # --- Positions --- #
 start_color = np.array([1.0, 1.0, 1.0])
 end_color   = np.array([0.9, 0.2, 0.2])
+start_ejecta_color = np.array([1.0, 0.27, 0.0])  # hot orange
+end_ejecta_color = np.array([1.0, 0.41, 0.71])    # hot pink
 trail1_x, trail1_y = [], []
 trail2_x, trail2_y = [], []
 pos1 = np.array([-init_dist / 2, 0], dtype=float)
 pos2 = np.array([init_dist / 2, 0], dtype=float)
+
+# Ejecta
+Num_ejecta = 150
+ejecta_positions = []
+ejecta_velocities = []
 
 # --- Plot --- #
 fig, ax = plt.subplots()
@@ -48,6 +55,7 @@ fig.set_facecolor('#010b19')
 ax.set_facecolor('#010b19')
 ax.tick_params(axis='x', colors='#010b19')
 ax.tick_params(axis='y', colors='#010b19')
+ejecta_scatter = ax.scatter([], [], s=5, alpha=0.8, zorder=2)
 for spine in ax.spines.values():
     spine.set_color('white')
 
@@ -73,7 +81,7 @@ def verlet_integration(pos1, pos2, a1, a2, v1, v2):
 def peters_mathews(pos1, pos2, v1, v2): # Orbital Decay
     r_vec = pos2 - pos1
     r = np.linalg.norm(r_vec)
-    delta_r = -5e3 * (PM_CONST / (r ** 3) * dt)
+    delta_r = -5e5 * (PM_CONST / (r ** 3) * dt) # Change the Constant for speed
     r_new = r + delta_r
     r_hat = r_vec / r
     if r_new <= R_ns or r_new <= 0:
@@ -95,7 +103,9 @@ def init():
     trail2_line.set_data([], [])
     merger.set_visible(False)
     merger.set_radius(1)
-    return pos1_dot, pos2_dot, trail1_line, trail2_line
+    ejecta_scatter.set_offsets(np.empty((0, 2)))
+    ejecta_scatter.set_alpha(0.0)
+    return pos1_dot, pos2_dot, trail1_line, trail2_line, ejecta_scatter
 
 def update(frame):
     global pos1, pos2, v1, v2, a1, a2
@@ -129,10 +139,34 @@ def update(frame):
         color = (1 - t) * start_color + t * end_color
         merger.set_facecolor(color)
         merger.set_alpha(1.0 - t)
+
+        if explosion_frame == 0:
+            ejecta_positions.clear()
+            ejecta_velocities.clear()
+            for _ in range(Num_ejecta):
+                angle = np.random.uniform(0, 2 * np.pi)
+                speed = np.random.uniform(0.5e7, 1.5e7)
+                vx = speed * np.cos(angle)
+                vy = speed * np.sin(angle)
+                ejecta_velocities.append(np.array([vx, vy]))
+                ejecta_positions.append(np.array([0.0, 0.0]))
+
+        for i in range(Num_ejecta):
+            ejecta_positions[i] += ejecta_velocities[i] * dt
+            positions_array = np.array(ejecta_positions)
+            ejecta_scatter.set_offsets(positions_array)
+            t = min(explosion_frame / 100, 1.0)  # progress from 0 to 1 over 100 frames
+            current_color = (1 - t) * start_ejecta_color + t * end_ejecta_color
+            colors_array = np.tile(current_color, (Num_ejecta, 1))  # repeat color for all points
+            ejecta_scatter.set_facecolor(colors_array)
+
+        x_vals = [p[0] for p in ejecta_positions]
+        y_vals = [p[1] for p in ejecta_positions]
+        ejecta_scatter.set_alpha(max(0.0, 1.0 - explosion_frame / 100))
         explosion_frame += 1
         if explosion_frame > 100:
             ani.event_source.stop()
-        return merger, trail1_line, trail2_line
+        return merger, trail1_line, trail2_line, ejecta_scatter
     return pos1_dot, pos2_dot, trail1_line, trail2_line, merger
 
 ani = FuncAnimation(
