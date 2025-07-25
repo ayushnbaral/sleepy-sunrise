@@ -4,8 +4,8 @@ This simulation models the Moon orbiting a stationary Earth using trigonometric 
 
 # How to Run:
 ```
-cd earth_moon
-python earth_moon.py
+cd orbital-modeling
+python orbital-modeling.py
 ```
 
 ## Problem
