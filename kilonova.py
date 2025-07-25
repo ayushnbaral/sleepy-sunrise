@@ -84,7 +84,7 @@ def verlet_integration(pos1, pos2, a1, a2, v1, v2):
 def peters_mathews(pos1, pos2, v1, v2):
     r_vec = pos2 - pos1
     r = np.linalg.norm(r_vec)
-    delta_r = -2.5e4 * (PM_CONST / (r ** 3) * dt)
+    delta_r = -2.5e4 * (PM_CONST / (r ** 3) * dt) #Change the Constant to reflect speed
     r_new = r + delta_r
     r_hat = r_vec / r
 
@@ -103,7 +103,7 @@ def peters_mathews(pos1, pos2, v1, v2):
 
     boost_factor = 3.0
     spin_multiplier = 1 + boost_factor * closeness**2
-    spin_multiplier = min(spin_multiplier, 2.3775)  # Cap the multiplier (tune this!)
+    spin_multiplier = min(spin_multiplier, 2.3775)  # Cap the multiplier
 
     v1_new = v_mag * tangential_dir * spin_multiplier
     v2_new = -v1_new
