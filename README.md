@@ -4,7 +4,22 @@
 
 We are rising high school juniors with a strong interest in physics and applied mathematics.  
 This project is a collaborative effort to explore and visualize fundamental physical systems through computational modeling.
+## ✅ Requirements
 
+### 💻 Python Version
+- Python **3.7 or higher** (recommended: 3.8+)
+
+### 📦 Python Libraries
+The simulations require these packages:
+
+- `numpy` — for numerical computations  
+- `matplotlib` — for plotting and animations
+
+Install them using:
+
+```bash
+pip install numpy matplotlib
+```
 ---
 
 ## 🌐 Current Focus
