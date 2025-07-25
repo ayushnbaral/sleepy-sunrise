@@ -44,3 +44,8 @@ Integration Functions at this point of time.
 We created an orbit of the moon around the earth that modeled a real-world system. It was vital in getting our foot in the door,
 and exposing us to physics concepts. Though it could've been more realistic, we learned about the process itself behind the scenes.
 
+## Sources
+
+>[Polar Coordinate System](https://en.wikipedia.org/wiki/Polar_coordinate_system)
+[MatPlotLib FuncAnimation](https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html)
+
