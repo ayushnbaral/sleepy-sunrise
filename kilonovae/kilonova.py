@@ -6,8 +6,9 @@ from matplotlib.patches import Circle
 # --- Planetary Constants --- #
 G = 6.6743e-11
 c = 299792458
-R_ns = 12000
-m1 = m2 = 2.78e30
+R_ns = 30000
+m1 = 2.78e30
+m2 = 2.78e30
 init_dist = 1000e3
 
 # --- Conditions --- #
@@ -20,19 +21,20 @@ PM_CONST = (64 / 5) * (G ** 3 * (m1 * m2) ** 2 / (m1 + m2)) / c ** 5
 v = np.sqrt(G * (m1 + m2) / init_dist) / 2
 T = 3.1415 * init_dist / v * 1
 pointsPerPeriod = 1000
-dt = T / pointsPerPeriod * 2
-v1 = np.array([0, v], dtype=float)
-v2 = np.array([0, -v], dtype=float)
+dt = T / pointsPerPeriod * 4
 
 # --- Positions --- #
 start_color = np.array([1.0, 1.0, 1.0])
 end_color   = np.array([0.9, 0.2, 0.2])
 start_ejecta_color = np.array([1.0, 0.27, 0.0])  # hot orange
 end_ejecta_color = np.array([1.0, 0.41, 0.71])    # hot pink
-trail1_x, trail1_y = [], []
-trail2_x, trail2_y = [], []
-pos1 = np.array([-init_dist / 2, 0], dtype=float)
-pos2 = np.array([init_dist / 2, 0], dtype=float)
+trail1_x, trail1_y = ([], [])
+trail2_x, trail2_y = ([], [])
+
+r1 = np.array([-init_dist / 2, 0], dtype=float)
+r2 = np.array([init_dist / 2, 0], dtype=float)
+v1 = np.array([0, v], dtype=float)
+v2 = np.array([0, -v], dtype=float)
 
 # Ejecta
 Num_ejecta = 150
@@ -61,54 +63,56 @@ ejecta_scatter = ax.scatter([], [], s=5, alpha=0.8, zorder=2)
 for spine in ax.spines.values():
     spine.set_color('white')
 
-def compute_accelerations(pos1, pos2):
-    r_vec = pos2 - pos1
-    r_mag = np.linalg.norm(r_vec)
-    r_hat = r_vec / r_mag
-    force_mag = G * m1 * m2 / r_mag ** 2 # Force formula
-    a1 = force_mag / m1 * r_hat
-    a2 = -force_mag / m2 * r_hat # Opposite to attract towards each other
+def compute_accelerations(r1, r2, v1, v2):
+    r_vec = r2 - r1
+    r = np.linalg.norm(r_vec)
+
+    a1 = G * m2 * r_vec / r** 3
+    a2 = -G * m1 * r_vec / r** 3
     return a1, a2
 
-a1, a2 = compute_accelerations(pos1, pos2)
-
-def verlet_integration(pos1, pos2, a1, a2, v1, v2):
-    pos1_new = pos1 + v1 * dt + 0.5 * a1 * dt ** 2 # Velocity Verlet
-    pos2_new = pos2 + v2 * dt + 0.5 * a2 * dt ** 2
-    a1_new, a2_new = compute_accelerations(pos1_new, pos2_new)
-    v1_new = v1 + 0.5 * (a1 + a1_new) * dt
-    v2_new = v2 + 0.5 * (a2 + a2_new) * dt
-    return pos1_new, pos2_new, v1_new, v2_new, a1_new, a2_new # Setting new positions
-
-
-def peters_mathews(pos1, pos2, v1, v2):
-    r_vec = pos2 - pos1
-    r = np.linalg.norm(r_vec)
-    delta_r = -2.5e4 * (PM_CONST / (r ** 3) * dt) #Change the Constant to reflect speed
-    r_new = r + delta_r
-    r_hat = r_vec / r
-
-    if r_new <= R_ns or r_new <= 0:
+def rk4_step(r1, r2, v1, v2, dt):
+    if np.linalg.norm(r2-r1) < 2 * R_ns:
         global merger_triggered
         merger_triggered = True
-        return pos1, pos2, v1, v2
+        return r1, r2, v1, v2
+    k1_r1 = v1
+    k1_r2 = v2
+    k1_vel1, k1_vel2 = compute_accelerations(r1, r2, v1, v2)
 
-    pos1_new = pos1 - 0.5 * (r_new - r) * r_hat
-    pos2_new = pos2 + 0.5 * (r_new - r) * r_hat
+    p1_k2 = r1 + 0.5 * dt * k1_r1
+    p2_k2 = r2 + 0.5 * dt * k1_r2
+    v1_k2 = v1 + 0.5 * dt * k1_vel1
+    v2_k2 = v2 + 0.5 * dt * k1_vel2
 
-    # Moderate spin-up with cap
-    v_mag = np.sqrt(G * (m1 + m2) / r_new) / 2
-    tangential_dir = np.array([-r_hat[1], r_hat[0]])
-    closeness = 1 - r_new / init_dist
+    k2_r1 = v1_k2
+    k2_r2 = v2_k2
+    k2_vel1, k2_vel2 = compute_accelerations(p1_k2, p2_k2, v1_k2, v2_k2)
 
-    boost_factor = 3.0
-    spin_multiplier = 1 + boost_factor * closeness**2
-    spin_multiplier = min(spin_multiplier, 2.3775)  # Cap the multiplier
+    p1_k3 = r1 + 0.5 * dt * k2_r1
+    p2_k3 = r2 + 0.5 * dt * k2_r2
+    v1_k3 = v1 + 0.5 * dt * k2_vel1
+    v2_k3 = v2 + 0.5 * dt * k2_vel2
 
-    v1_new = v_mag * tangential_dir * spin_multiplier
-    v2_new = -v1_new
+    k3_r1 = v1_k3
+    k3_r2 = v2_k3
+    k3_vel1, k3_vel2 = compute_accelerations(p1_k3, p2_k3, v1_k3, v2_k3)
 
-    return pos1_new, pos2_new, v1_new, v2_new
+    p1_k4 = r1 + dt * k3_r1
+    p2_k4 = r2 + dt * k3_r2
+    v1_k4 = v1 + dt * k3_vel1
+    v2_k4 = v2 + dt * k3_vel2
+
+    k4_r1 = v1_k4
+    k4_r2 = v2_k4
+    k4_vel1, k4_vel2 = compute_accelerations(p1_k4, p2_k4, v1_k4, v2_k4)
+
+    r1_new = r1 + (dt/6) * (k1_r1 + 2 * k2_r1 + 2 * k3_r1 + k4_r1)
+    r2_new = r2 + (dt/6) * (k1_r2 + 2 * k2_r2 + 2 * k3_r2 + k4_r2)
+    v1_new = v1 + (dt/6) * (k1_vel1 + 2 * k2_vel1 + 2 * k3_vel1 + k4_vel1)
+    v2_new = v2 + (dt/6) * (k1_vel2 + 2 * k2_vel2 + 2 * k3_vel2 + k4_vel2)
+
+    return r1_new, r2_new, v1_new, v2_new
 
 
 
@@ -124,25 +128,10 @@ def init():
     return pos1_dot, pos2_dot, trail1_line, trail2_line, ejecta_scatter
 
 def update(frame):
-    global pos1, pos2, v1, v2, a1, a2
-    pos1, pos2, v1, v2, a1, a2 = verlet_integration(pos1, pos2, a1, a2, v1, v2)
-    pos1, pos2, v1, v2 = peters_mathews(pos1, pos2, v1, v2)
-
-    # Update trail data
-    trail1_x.append(pos1[0])
-    trail1_y.append(pos1[1])
-    trail2_x.append(pos2[0])
-    trail2_y.append(pos2[1])
-
-    # Update plot data
-    pos1_dot.set_data([pos1[0]], [pos1[1]])
-    pos2_dot.set_data([pos2[0]], [pos2[1]])
-    trail1_line.set_data(trail1_x, trail1_y)
-    trail2_line.set_data(trail2_x, trail2_y)
-
-    global explosion_frame
-
+    global r1, r2, v1, v2
+    r1, r2, v1, v2 = rk4_step(r1, r2, v1, v2, dt)
     if merger_triggered:
+        global explosion_frame
         pos1_dot.set_data([], [])
         pos2_dot.set_data([], [])
         trail1_line.set_data([], [])
@@ -183,6 +172,28 @@ def update(frame):
         if explosion_frame > 100:
             ani.event_source.stop()
         return merger, trail1_line, trail2_line, ejecta_scatter
+    else:
+
+        # Update trail data
+        trail1_x.append(r1[0])
+        trail1_y.append(r1[1])
+        trail2_x.append(r2[0])
+        trail2_y.append(r2[1])
+
+        if len(trail1_x) > 50:
+            trail1_x.pop(0)
+            trail1_y.pop(0)
+            trail2_x.pop(0)
+            trail2_y.pop(0)
+
+        # Update plot data
+        pos1_dot.set_data([r1[0]], [r1[1]])
+        pos2_dot.set_data([r2[0]], [r2[1]])
+        trail1_line.set_data(trail1_x, trail1_y)
+        trail2_line.set_data(trail2_x, trail2_y)
+
+    r1 *= 0.999
+    r2 *= 0.999
     return pos1_dot, pos2_dot, trail1_line, trail2_line, merger
 
 ani = FuncAnimation(
