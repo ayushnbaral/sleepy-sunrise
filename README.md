@@ -1,6 +1,6 @@
 [![Sleepy Sunrise](https://img.shields.io/badge/YouTube-Sleepy__Sunrise-red?logo=youtube&style=for-the-badge)](https://www.youtube.com/@sleepy-sunrise)
 
-Check out for results of our code!
+Check out for videos of the posted code if the gifs aren't satisfactory.
 
 # ☀️ Sleepy Sunrise — A Physics Modeling Project
 
@@ -66,7 +66,7 @@ Demonstrates the complex and chaotic behavior of a three-body gravitational syst
 
 | Simulation      | Physics Topics                  | Programming Skills                  | Numerical Methods           |
 |----------------|----------------------------------|-------------------------------------|-----------------------------|
-| `kilonova/`     | Gravitational waves, binary orbits | Numpy, animation, particle systems  | Velocity Verlet Integration |
+| `kilonova/`     | Gravitational waves, binary orbits | Numpy, animation, particle systems  | RK4 Integration |
 | `solar_system/` | Newtonian gravity, planetary motion | Scaling, zoom, multi-body systems   | Velocity Verlet Integration  |
 | `earth_moon/`   | Two-body motion, real-world modeling | Simple simulation design            | Euler Method                |
 | `three_body/`   | Chaos, nonlinear interactions     | Generalized force loops, plotting   | Euler Integration  |
