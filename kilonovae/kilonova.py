@@ -1,196 +1,267 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Circle
 
-# --- Planetary Constants --- #
-G = 6.6743e-11
-c = 299792458
-R_ns = 12000
-m1 = m2 = 2.78e30
-init_dist = 1000e3
+# =========================
+# PHYSICAL CONSTANTS
+# =========================
+G = 6.6743e-11         # Gravitational constant (m^3 kg^-1 s^-2)
+c = 299792458          # Speed of light (m/s)
+R_ns = 12000           # Approximate radius of a neutron star (m)
+m1 = 2.78e30           # Mass of neutron star 1 (kg)
+m2 = 2.78e30           # Mass of neutron star 2 (kg)
 
-# --- Conditions --- #
-lim = init_dist * 0.7
+# Derived quantities
+init_dist = 1e5        # Initial separation (m)
+M = m1 + m2            # Total mass
+mu = (m1 * m2) / M     # Reduced mass
+eta = mu / M           # Symmetric mass ratio
+
+# =========================
+# SIMULATION PARAMETERS
+# =========================
+lim = init_dist * 1  # Initial plot limit
 merger_triggered = False
 explosion_frame = 0
 
-# --- Constants --- #
-PM_CONST = (64 / 5) * (G ** 3 * (m1 * m2) ** 2 / (m1 + m2)) / c ** 5
-v = np.sqrt(G * (m1 + m2) / init_dist) / 2
-T = 3.1415 * init_dist / v * 1
-pointsPerPeriod = 1000
-dt = T / pointsPerPeriod * 2
-v1 = np.array([0, v], dtype=float)
+# Orbital parameters
+v = 0.98 * np.sqrt(G * M / init_dist) * m2 / M  # Initial orbital speed (reduced)
+T = np.pi * init_dist / v                       # Orbital period
+dt = (T / 1000) * 25                           # Timestep
+
+# =========================
+# VISUAL PARAMETERS
+# =========================
+start_color         = np.array([1.0, 1.0, 1.0])  # Merger start (white)
+end_color           = np.array([0.9, 0.2, 0.2])  # Merger end (red)
+start_ejecta_color  = np.array([1.0, 0.27, 0.0]) # Hot ejecta (orange)
+end_ejecta_color    = np.array([1.0, 0.41, 0.71])# Cooler ejecta (pink)
+
+# =========================
+# INITIAL CONDITIONS
+# =========================
+r1 = np.array([-init_dist / 2, 0], dtype=float)
+r2 = np.array([ init_dist / 2, 0], dtype=float)
+v1 = np.array([0,  v], dtype=float)
 v2 = np.array([0, -v], dtype=float)
 
-# --- Positions --- #
-start_color = np.array([1.0, 1.0, 1.0])
-end_color   = np.array([0.9, 0.2, 0.2])
-start_ejecta_color = np.array([1.0, 0.27, 0.0])  # hot orange
-end_ejecta_color = np.array([1.0, 0.41, 0.71])    # hot pink
 trail1_x, trail1_y = [], []
 trail2_x, trail2_y = [], []
-pos1 = np.array([-init_dist / 2, 0], dtype=float)
-pos2 = np.array([init_dist / 2, 0], dtype=float)
 
-# Ejecta
+# =========================
+# EJECTA INITIALIZATION
+# =========================
 Num_ejecta = 150
 ejecta_positions = []
 ejecta_velocities = []
 
-# --- Plot --- #
+# =========================
+# PLOTTING SETUP
+# =========================
 fig, ax = plt.subplots()
-ax.set_aspect('equal', 'box')
+ax.set_aspect('equal')
 ax.set_xlim(-lim, lim)
 ax.set_ylim(-lim, lim)
-plt.scatter([0], [0], color='white', marker='x', label="Center of Mass")
-pos1_dot, = ax.plot([], [], marker='o', color='#703be7', ms=16, label='Star 1', zorder=2)
-pos2_dot, = ax.plot([], [], marker='o', color='#703be7', ms=16, label='Star 2', zorder=2)
-merger = Circle((0, 0), 1, zorder=3)
-ax.add_patch(merger)
-trail1_line, = ax.plot([], [], ls = '-', color ='r', lw=0.75, zorder=1)
-trail2_line, = ax.plot([], [], ls = '-', color ='w', lw=0.75, zorder = 1)
 fig.set_facecolor('#010b19')
 ax.set_facecolor('#010b19')
+ax.set_title("Kilonova Simulation", color='white')
 ax.tick_params(axis='x', colors='#010b19')
 ax.tick_params(axis='y', colors='#010b19')
+
+# Plot: static features
 plt.rcParams['font.family'] = 'Franklin Gothic Book'
-ax.set_title("Kilonova Simulation", color='white')
+plt.scatter([0], [0], color='white', marker='x', label="Center of Mass")
+
+# Plot: dynamic features
+pos1_dot, = ax.plot([], [], 'o', color='#703be7', ms=17, label='Star 1', zorder=2)
+pos2_dot, = ax.plot([], [], 'o', color='#703be7', ms=17, label='Star 2', zorder=2)
+trail1_line, = ax.plot([], [], '-', color='r', lw=0.75, zorder=1)
+trail2_line, = ax.plot([], [], '-', color='w', lw=0.75, zorder=1)
 ejecta_scatter = ax.scatter([], [], s=5, alpha=0.8, zorder=2)
+
+# Merger visuals
+merger = Circle((0, 0), 1, visible=False, zorder=3)
+shockwave = Circle((0, 0), radius=1, fc='none', ec='white', lw=1.5, alpha=0.5, visible=False)
+ax.add_patch(merger)
+ax.add_patch(shockwave)
+
+# Glowing effect behind stars
+glow1_dot, = ax.plot([], [], 'o', color='#703be7', ms=30, alpha=0.15, zorder=1)
+glow2_dot, = ax.plot([], [], 'o', color='#703be7', ms=30, alpha=0.15, zorder=1)
+
+# White borderlines
 for spine in ax.spines.values():
     spine.set_color('white')
 
-def compute_accelerations(pos1, pos2):
-    r_vec = pos2 - pos1
-    r_mag = np.linalg.norm(r_vec)
-    r_hat = r_vec / r_mag
-    force_mag = G * m1 * m2 / r_mag ** 2 # Force formula
-    a1 = force_mag / m1 * r_hat
-    a2 = -force_mag / m2 * r_hat # Opposite to attract towards each other
+# =========================
+# PHYSICS CALCULATIONS
+# =========================
+def relative_vectors(r1, r2, v1, v2):
+    r_vec = r2 - r1
+    v_vec = v2 - v1
+    r = np.linalg.norm(r_vec)
+    v = np.linalg.norm(v_vec)
+    n_hat = r_vec / r
+    return r, v, n_hat, r_vec, v_vec
+
+def acceleration_newton(r, n_hat):
+    return - (G * M) / r**2 * n_hat
+
+def acceleration_1PN(r, v, n_hat, v_vec):
+    v_dot_n = np.dot(v_vec, n_hat)
+    term1 = (1 + 3 * eta) * v**2
+    term2 = -2 * (2 + eta) * (G * M / r)
+    term3 = -1.5 * eta * v_dot_n**2
+    return - (G * M) / r**2 * (n_hat * (term1 + term2 + term3) - 2 * (2 - eta) * v_dot_n * v_vec) / c**2
+
+def acceleration_2_5PN(r, v, n_hat, v_vec):
+    v_dot_n = np.dot(v_vec, n_hat)
+    coeff = (8/5) * eta * G**2 * M**2 / (c**5 * r**3)
+    return coeff * (n_hat * v_dot_n * (18 * v**2 + (2/3) * (G * M / r) - 25 * v_dot_n**2)
+                    - v_vec * (6 * v**2 - 2 * (G * M / r) - 15 * v_dot_n**2))
+
+def compute_accelerations(r1, r2, v1, v2):
+    r, v, n_hat, r_vec, v_vec = relative_vectors(r1, r2, v1, v2)
+    a_newton = acceleration_newton(r, n_hat)
+    a_1pn = acceleration_1PN(r, v, n_hat, v_vec)
+    a_2_5pn = acceleration_2_5PN(r, v, n_hat, v_vec)
+    a_total = a_newton + a_1pn + a_2_5pn
+    a1 = -(m2 / M) * a_total
+    a2 =  (m1 / M) * a_total
     return a1, a2
 
-a1, a2 = compute_accelerations(pos1, pos2)
+def rk4_step(r1, r2, v1, v2, dt):
+    """4th order Runge-Kutta integrator with post-Newtonian corrections."""
+    global merger_triggered
 
-def verlet_integration(pos1, pos2, a1, a2, v1, v2):
-    pos1_new = pos1 + v1 * dt + 0.5 * a1 * dt ** 2 # Velocity Verlet
-    pos2_new = pos2 + v2 * dt + 0.5 * a2 * dt ** 2
-    a1_new, a2_new = compute_accelerations(pos1_new, pos2_new)
-    v1_new = v1 + 0.5 * (a1 + a1_new) * dt
-    v2_new = v2 + 0.5 * (a2 + a2_new) * dt
-    return pos1_new, pos2_new, v1_new, v2_new, a1_new, a2_new # Setting new positions
-
-
-def peters_mathews(pos1, pos2, v1, v2):
-    r_vec = pos2 - pos1
-    r = np.linalg.norm(r_vec)
-    delta_r = -2.5e4 * (PM_CONST / (r ** 3) * dt) #Change the Constant to reflect speed
-    r_new = r + delta_r
-    r_hat = r_vec / r
-
-    if r_new <= R_ns or r_new <= 0:
-        global merger_triggered
+    if np.linalg.norm(r2 - r1) < 2 * R_ns:
         merger_triggered = True
-        return pos1, pos2, v1, v2
+        return r1, r2, v1, v2
 
-    pos1_new = pos1 - 0.5 * (r_new - r) * r_hat
-    pos2_new = pos2 + 0.5 * (r_new - r) * r_hat
+    a1_k1, a2_k1 = compute_accelerations(r1, r2, v1, v2)
+    r1_k2 = r1 + 0.5 * dt * v1
+    r2_k2 = r2 + 0.5 * dt * v2
+    v1_k2 = v1 + 0.5 * dt * a1_k1
+    v2_k2 = v2 + 0.5 * dt * a2_k1
+    a1_k2, a2_k2 = compute_accelerations(r1_k2, r2_k2, v1_k2, v2_k2)
 
-    # Moderate spin-up with cap
-    v_mag = np.sqrt(G * (m1 + m2) / r_new) / 2
-    tangential_dir = np.array([-r_hat[1], r_hat[0]])
-    closeness = 1 - r_new / init_dist
+    r1_k3 = r1 + 0.5 * dt * v1_k2
+    r2_k3 = r2 + 0.5 * dt * v2_k2
+    v1_k3 = v1 + 0.5 * dt * a1_k2
+    v2_k3 = v2 + 0.5 * dt * a2_k2
+    a1_k3, a2_k3 = compute_accelerations(r1_k3, r2_k3, v1_k3, v2_k3)
 
-    boost_factor = 3.0
-    spin_multiplier = 1 + boost_factor * closeness**2
-    spin_multiplier = min(spin_multiplier, 2.3775)  # Cap the multiplier
+    r1_k4 = r1 + dt * v1_k3
+    r2_k4 = r2 + dt * v2_k3
+    v1_k4 = v1 + dt * a1_k3
+    v2_k4 = v2 + dt * a2_k3
+    a1_k4, a2_k4 = compute_accelerations(r1_k4, r2_k4, v1_k4, v2_k4)
 
-    v1_new = v_mag * tangential_dir * spin_multiplier
-    v2_new = -v1_new
+    r1_new = r1 + (dt / 6) * (v1 + 2 * v1_k2 + 2 * v1_k3 + v1_k4)
+    r2_new = r2 + (dt / 6) * (v2 + 2 * v2_k2 + 2 * v2_k3 + v2_k4)
+    v1_new = v1 + (dt / 6) * (a1_k1 + 2 * a1_k2 + 2 * a1_k3 + a1_k4)
+    v2_new = v2 + (dt / 6) * (a2_k1 + 2 * a2_k2 + 2 * a2_k3 + a2_k4)
+    return r1_new, r2_new, v1_new, v2_new
 
-    return pos1_new, pos2_new, v1_new, v2_new
-
-
-
+# =========================
+# ANIMATION FUNCTIONS
+# =========================
 def init():
     pos1_dot.set_data([], [])
     pos2_dot.set_data([], [])
     trail1_line.set_data([], [])
     trail2_line.set_data([], [])
     merger.set_visible(False)
-    merger.set_radius(1)
     ejecta_scatter.set_offsets(np.empty((0, 2)))
     ejecta_scatter.set_alpha(0.0)
-    return pos1_dot, pos2_dot, trail1_line, trail2_line, ejecta_scatter
+    glow1_dot.set_data([], [])
+    glow2_dot.set_data([], [])
+    return pos1_dot, pos2_dot, trail1_line, trail2_line, ejecta_scatter, glow1_dot, glow2_dot
 
 def update(frame):
-    global pos1, pos2, v1, v2, a1, a2
-    pos1, pos2, v1, v2, a1, a2 = verlet_integration(pos1, pos2, a1, a2, v1, v2)
-    pos1, pos2, v1, v2 = peters_mathews(pos1, pos2, v1, v2)
+    global r1, r2, v1, v2, explosion_frame
 
-    # Update trail data
-    trail1_x.append(pos1[0])
-    trail1_y.append(pos1[1])
-    trail2_x.append(pos2[0])
-    trail2_y.append(pos2[1])
-
-    # Update plot data
-    pos1_dot.set_data([pos1[0]], [pos1[1]])
-    pos2_dot.set_data([pos2[0]], [pos2[1]])
-    trail1_line.set_data(trail1_x, trail1_y)
-    trail2_line.set_data(trail2_x, trail2_y)
-
-    global explosion_frame
+    r1, r2, v1, v2 = rk4_step(r1, r2, v1, v2, dt)
 
     if merger_triggered:
         pos1_dot.set_data([], [])
         pos2_dot.set_data([], [])
         trail1_line.set_data([], [])
         trail2_line.set_data([], [])
+        glow1_dot.set_data([], [])
+        glow2_dot.set_data([], [])
 
         merger.set_visible(True)
-        merger.set_radius(50000 * np.sqrt(explosion_frame + 1))
-        t = explosion_frame / 50
-        t = min(t, 1.0)
-        color = (1 - t) * start_color + t * end_color
-        merger.set_facecolor(color)
+        merger.set_radius(400000 * np.sqrt(explosion_frame + 1))
+
+        t = min(explosion_frame / 50, 1.0)
+        merger.set_facecolor((1 - t) * start_color + t * end_color)
         merger.set_alpha(1.0 - t)
 
+        shockwave.set_visible(True)
+        shockwave.set_radius(300000 * np.sqrt(explosion_frame + 1))
+        shockwave.set_alpha(max(0.0, 1.0 - explosion_frame / 100))
+
         if explosion_frame == 0:
+            ax.set_xlim(-lim * 30, lim * 30)
+            ax.set_ylim(-lim * 30, lim * 30)
             ejecta_positions.clear()
             ejecta_velocities.clear()
+            v_eq, v_pol = 0.05 * c, 0.2 * c
+
             for _ in range(Num_ejecta):
                 angle = np.random.uniform(0, 2 * np.pi)
-                speed = np.random.uniform(0.5e7, 1.5e7)
-                vx = speed * np.cos(angle)
-                vy = speed * np.sin(angle)
+                v_theta = v_eq + (v_pol - v_eq) * np.cos(angle)**2
+                vx, vy = v_theta * np.cos(angle), v_theta * np.sin(angle)
                 ejecta_velocities.append(np.array([vx, vy]))
                 ejecta_positions.append(np.array([0.0, 0.0]))
 
         for i in range(Num_ejecta):
-            ejecta_positions[i] += ejecta_velocities[i] * dt
-            positions_array = np.array(ejecta_positions)
-            ejecta_scatter.set_offsets(positions_array)
-            t = min(explosion_frame / 100, 1.0)  # progress from 0 to 1 over 100 frames
-            current_color = (1 - t) * start_ejecta_color + t * end_ejecta_color
-            colors_array = np.tile(current_color, (Num_ejecta, 1))  # repeat color for all points
-            ejecta_scatter.set_facecolor(colors_array)
+            ejecta_positions[i] += ejecta_velocities[i] * (dt * 4)
 
-        x_vals = [p[0] for p in ejecta_positions]
-        y_vals = [p[1] for p in ejecta_positions]
+        ejecta_scatter.set_offsets(np.array(ejecta_positions))
+
+        t = min(explosion_frame / 100, 1.0)
+        current_color = (1 - t) * start_ejecta_color + t * end_ejecta_color
+        ejecta_scatter.set_facecolor(np.tile(current_color, (Num_ejecta, 1)))
         ejecta_scatter.set_alpha(max(0.0, 1.0 - explosion_frame / 100))
+
         explosion_frame += 1
         if explosion_frame > 100:
             ani.event_source.stop()
-        return merger, trail1_line, trail2_line, ejecta_scatter
-    return pos1_dot, pos2_dot, trail1_line, trail2_line, merger
 
+        return merger, trail1_line, trail2_line, ejecta_scatter, glow1_dot, glow2_dot, shockwave
+
+    # Binary still orbiting
+    trail1_x.append(r1[0])
+    trail1_y.append(r1[1])
+    trail2_x.append(r2[0])
+    trail2_y.append(r2[1])
+    if len(trail1_x) > 50:
+        trail1_x.pop(0)
+        trail1_y.pop(0)
+        trail2_x.pop(0)
+        trail2_y.pop(0)
+
+    pos1_dot.set_data([r1[0]], [r1[1]])
+    pos2_dot.set_data([r2[0]], [r2[1]])
+    trail1_line.set_data(trail1_x, trail1_y)
+    trail2_line.set_data(trail2_x, trail2_y)
+    glow1_dot.set_data([r1[0]], [r1[1]])
+    glow2_dot.set_data([r2[0]], [r2[1]])
+
+    return pos1_dot, pos2_dot, trail1_line, trail2_line, merger, glow1_dot, glow2_dot, ejecta_scatter
+
+# =========================
+# ANIMATION LAUNCH
+# =========================
 ani = FuncAnimation(
     fig,
     update,
     init_func=init,
     frames=5000,
-    interval=14,
+    interval=15,
     blit=True
 )
 
