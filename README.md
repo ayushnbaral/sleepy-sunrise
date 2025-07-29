@@ -32,9 +32,9 @@ Our current modules focus on **gravitational modeling and orbital dynamics**, in
 
 ### 🔭 `kilonova/`
 A dynamic simulation of two neutron stars in a decaying binary orbit, spiraling inward due to gravitational wave radiation and eventually merging in a kilonova explosion.  
-- **Physics Modeled:** Gravitational wave-driven orbital decay (Peters-Mathews approximation), realistic mass and radius of neutron stars, and relativistic effects on separation.  
+- **Physics Modeled:** Gravitational wave-driven orbital decay (2.5PN + 1PN), realistic mass and radius of neutron stars, and relativistic effects on separation.  
 - **Visual Features:** Trails showing orbital paths, a smooth merger explosion with expanding ejecta particles, and color transitions representing heat dissipation.  
-- **Integration Method:** Velocity Verlet integration for numerical stability during tight orbital motion.
+- **Integration Method:** RK4 integration for numerical stability during tight orbital motion.
 
 ---
 
