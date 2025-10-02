@@ -47,8 +47,8 @@ This project simulates all 8 planets orbiting the Sun using Newtonian gravity an
 
 ## Sources
 
->[Velocity Verlet Algorithm](https://www.youtube.com/watch?v=1bwsy26x24Q)
+[Velocity Verlet Algorithm](https://www.youtube.com/watch?v=1bwsy26x24Q)
 [MatPlotLib FuncAnimation](https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html)
->[NASA Planet Data](https://nssdc.gsfc.nasa.gov/planetary/factsheet/)
+[NASA Planet Data](https://nssdc.gsfc.nasa.gov/planetary/factsheet/)
 [Newton's Law of Universal Gravitation](https://en.wikipedia.org/wiki/Newton%27s_law_of_universal_gravitation)
 

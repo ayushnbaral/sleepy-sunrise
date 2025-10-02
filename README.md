@@ -62,6 +62,13 @@ Demonstrates the complex and chaotic behavior of a three-body gravitational syst
 
 ---
 
+### 🪐 `multi_moon/`
+
+Simulates Jupiter and its moons as a multi-body gravitational system, highlighting interactions among many satellites orbiting a massive planet.
+- **Physics Modeled:** Newtonian gravity applied to Jupiter and multiple moons (Galilean satellites + inner moons), including perturbations between moons.
+- **Visual Features:** 2D and 3D visualizations of orbital paths, trails showing resonances (e.g., Io–Europa–Ganymede Laplace resonance), zoom modes for both inner and outer moons.
+- **Integration Method:** Velocity Verlet integration for long-term orbital stability with many bodies.
+
 ## 🧠 Skills Demonstrated
 
 | Simulation      | Physics Topics                  | Programming Skills                  | Numerical Methods           |
@@ -70,6 +77,7 @@ Demonstrates the complex and chaotic behavior of a three-body gravitational syst
 | `solar_system/` | Newtonian gravity, planetary motion | Scaling, zoom, multi-body systems   | Velocity Verlet Integration  |
 | `earth_moon/`   | Two-body motion, real-world modeling | Simple simulation design            | Euler Method                |
 | `three_body/`   | Chaos, nonlinear interactions     | Generalized force loops, plotting   | Euler Integration  |
+| `multi_moon/` |	Resonances, multi-body orbital dynamics |	Multi-object simulation, 3D plotting | Velocity Verlet Integration
 
 - **Languages & Libraries:** Python, NumPy, Matplotlib, FuncAnimation  
 - **Physics Topics:** Newtonian gravity, orbital mechanics, circular motion, numerical integration (Velocity Verlet)
