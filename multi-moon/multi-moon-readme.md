@@ -56,3 +56,4 @@ We simulated Jupiter's Moons in a Three Dimensional Space with Python.
 [3D MatPlotLib](https://matplotlib.org/stable/api/toolkits/mplot3d.html#module-mpl_toolkits.mplot3d)
 [FuncAnimation](https://matplotlib.org/stable/users/explain/animations/animations.html)
 [Jupiter's Moons](https://science.nasa.gov/jupiter/jupiter-moons/all-jupiter-moons/)
+[Newton's Law of Universal Gravitation](https://en.wikipedia.org/wiki/Newton%27s_law_of_universal_gravitation)
