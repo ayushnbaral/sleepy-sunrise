@@ -13,7 +13,7 @@ sim.move_to_com()
 sim.integrator="ias15"
 
 viewframe = 11
-num_frames = 779710
+num_frames = 779710 #change this number if it takes too long
 
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(projection='3d')
