@@ -13,6 +13,7 @@ sim.move_to_com()
 sim.integrator="ias15"
 
 viewframe = 11
+num_frames = 779710
 
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(projection='3d')
@@ -41,7 +42,7 @@ inner_orbit_line, = ax.plot([], [], [], color='cyan', lw=1.5, alpha=0.7)
 outer_orbit_line, = ax.plot([], [], [], color='red', lw=1.5, alpha=0.7)
 updating_text = ax.text2D(0.02,0.95, "",transform=ax.transAxes, color="white")
 
-time = np.arange(0,108573, 1.2)
+time = np.arange(0,num_frames, 1.2)
 index = np.linspace(0, len(time)-1, 5000, dtype=int)
 theta = np.linspace(0, 2*np.pi, 100, dtype=int)
 orbit1_a = []
@@ -74,7 +75,7 @@ for i in time:
     orbit2_inc.append(orbit2.inc)
     orbit2_Omega.append(orbit2.Omega)
     orbit2_omega.append(orbit2.omega)
-    print(f'{i / 108573 * 100:.3f}% done')
+    print(f'{i / num_frames * 100:.3f}% done')
 
 print("completed")
 
